@@ -6,7 +6,12 @@ const FlexpaLogin = () => {
   const handleClick = () => {
     FlexpaLink.open();
   };
-  return <button onClick={handleClick}>Open</button>;
+
+  return (
+    <div>
+      <button onClick={handleClick}>Open</button>
+    </div>
+  );
 };
 
 export default FlexpaLogin;

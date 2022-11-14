@@ -1,10 +1,12 @@
 import { configureStore } from '@reduxjs/toolkit';
-import flexpa from 'store/slices/flexpa';
+import flexpaApi from 'store/slices/flexpa';
 
 const store = configureStore({
   reducer: {
-    flexpa,
+    [flexpaApi.reducerPath]: flexpaApi.reducer,
   },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware().concat(flexpaApi.middleware),
 });
 
 export default store;
