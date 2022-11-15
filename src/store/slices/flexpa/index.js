@@ -1,25 +1,29 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { REHYDRATE } from 'redux-persist';
+import jwt from 'jwt-decode';
 
-const reducerPath = 'flexpaApi';
+const name = 'flexpaApi';
 
 const flexpaApi = createApi({
-  reducerPath,
+  reducerPath: name,
   baseQuery: fetchBaseQuery({
     baseUrl: process.env.REACT_APP_FLEXPA_BASE_URL,
     prepareHeaders: (headers, { getState, endpoint }) => {
-      console.log('prepareHeaders', endpoint);
-      const state = getState();
-      handleHeaders(headers, state);
+      if (endpoint !== 'getAccessToken') {
+        const state = getState();
+        handleHeaders(headers, state);
+      }
     },
   }),
+  extractRehydrationInfo(action, { reducerPath }) {
+    console.log(action);
+    if (action.type === REHYDRATE && action.payload) {
+      return action.payload[reducerPath];
+    }
+  },
   endpoints: (builder) => ({
     getAccessToken: builder.query({
       query: ({ public_token }) => {
-        console.log(
-          'getAccessToken',
-          public_token,
-          process.env.REACT_APP_FLEXPA_SECRET
-        );
         return {
           url: `/link/exchange`,
           method: 'POST',
@@ -29,22 +33,33 @@ const flexpaApi = createApi({
           },
         };
       },
+      transformResponse: (response) => {
+        const user = jwt(response.access_token);
+        const id = user.sub.replace('Patient/', '');
+        return { ...response, user: { ...user, id } };
+      },
     }),
-    getEoB: () => builder.query({ query: () => ({ url: `eob` }) }),
+    getEoB: builder.query({
+      query: (patient) => ({
+        url: `/fhir/ExplanationOfBenefit`,
+        params: { patient },
+      }),
+    }),
   }),
 });
 
 const handleHeaders = (headers, state) => {
   const result = flexpaApi.endpoints.getAccessToken.select()(state);
+  console.log('handleHeaders', result);
   if (!result.isUninitialized) {
-    console.log(result);
     const { data } = result;
     if (data.access_token) {
-      headers.set('authorization', data.access_token);
+      headers.set('authorization', `Bearer ${data.access_token}`);
     }
   }
 };
 
 export const { getAccessToken } = flexpaApi.endpoints;
+export const { useGetAccessTokenQuery, useGetEoBQuery } = flexpaApi;
 
 export default flexpaApi;
