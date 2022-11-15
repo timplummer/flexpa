@@ -10,7 +10,7 @@ export const EOB = () => {
   }, [dispatch]);
   return (
     <div>
-      <pre>{JSON.stringify(data)}</pre>
+      <pre>{JSON.stringify(data, undefined, 2)}</pre>
     </div>
   );
 };
