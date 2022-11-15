@@ -17,7 +17,7 @@ export const fetchEob = async (auth) => {
     authorization: auth.access_token,
   };
   const response = await fetch(
-    `${FLEXPA_BASE_URL}/fhir/ExplanationOfBenefit?patient=${auth.user.id}`,
+    `${FLEXPA_BASE_URL}/fhir/ExplanationOfBenefit?patient=${auth.id}`,
     {
       headers,
     }

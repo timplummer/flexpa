@@ -1,3 +1,15 @@
+# Description
+
+This is a barebones example on how to retrieve data. The decision to include no robust visual components was intentional.
+
+## Issues
+
+1. Originally Redux Toolkit Query was implemented. However there were issues with subscriptions to the chached data. When an action is fulfilled, the caches should be updated and the subscriptions should trigger component re-renders. However, this was not the case and, honestly, it wasn't worth the time to investigate.
+
+2. The docs don't include where to get the Patient ID. It was assumed this was done from the JWT. The closest thing to a `id` was `sub` The formatting of this field (`Patient/XXXXXX`) seemed odd, but worked (kind of, see 3).
+
+3. The EoB for a Cigna patient is returning a 500 error. It was thought at first that the Patient ID was malformed so the `Patient/` portion was removed but still resulted in 500. Multiple users were used and all resulted in a 500 error.
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).

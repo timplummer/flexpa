@@ -11,8 +11,8 @@ export const fetchAuth = createAsyncThunk(
   async (token) => {
     const data = await api.fetchAuth(token);
     const user = jwt(data?.access_token);
-    const id = user.sub.replace('Patient/', '');
-    return { ...data, user: { ...user, id } };
+    const id = user.sub;
+    return { ...data, id, user };
   }
 );
 

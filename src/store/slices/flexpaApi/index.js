@@ -49,7 +49,6 @@ const flexpaApi = createApi({
 
 const handleHeaders = (headers, state) => {
   const result = flexpaApi.endpoints.getAccessToken.select()(state);
-  console.log('handleHeaders', result);
   if (!result.isUninitialized) {
     const { data } = result;
     if (data.access_token) {
