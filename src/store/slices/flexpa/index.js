@@ -1,65 +1,50 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { REHYDRATE } from 'redux-persist';
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import jwt from 'jwt-decode';
+import * as api from './api';
 
-const name = 'flexpaApi';
+export const name = 'flexpa';
 
-const flexpaApi = createApi({
-  reducerPath: name,
-  baseQuery: fetchBaseQuery({
-    baseUrl: process.env.REACT_APP_FLEXPA_BASE_URL,
-    prepareHeaders: (headers, { getState, endpoint }) => {
-      if (endpoint !== 'getAccessToken') {
-        const state = getState();
-        handleHeaders(headers, state);
-      }
-    },
-  }),
-  extractRehydrationInfo(action, { reducerPath }) {
-    console.log(action);
-    if (action.type === REHYDRATE && action.payload) {
-      return action.payload[reducerPath];
-    }
+const initialState = { auth: {}, eob: {} };
+
+export const fetchAuth = createAsyncThunk(
+  `${name}/fetchAuth`,
+  async (token) => {
+    const data = await api.fetchAuth(token);
+    const user = jwt(data?.access_token);
+    const id = user.sub.replace('Patient/', '');
+    return { ...data, user: { ...user, id } };
+  }
+);
+
+export const fetchEob = createAsyncThunk(
+  `${name}/fetchEob`,
+  async (arg, { getState }) => {
+    const state = getState();
+    const auth = state[name].auth;
+    const data = await api.fetchEob(auth);
+    return data;
+  }
+);
+
+const flexpaSlice = createSlice({
+  name,
+  initialState,
+  reducers: {},
+  extraReducers: (builder) => {
+    builder.addCase(fetchAuth.fulfilled, (state, action) => {
+      state.auth = action.payload;
+    });
+    builder.addCase(fetchAuth.rejected, (state, action) => {
+      state.auth.error = action.error;
+    });
+    builder.addCase(fetchEob.fulfilled, (state, action) => {
+      state.eob = action.payload;
+    });
+    builder.addCase(fetchEob.rejected, (state, action) => {
+      state.eob = action.error;
+    });
   },
-  endpoints: (builder) => ({
-    getAccessToken: builder.query({
-      query: ({ public_token }) => {
-        return {
-          url: `/link/exchange`,
-          method: 'POST',
-          body: {
-            public_token,
-            secret_key: process.env.REACT_APP_FLEXPA_SECRET,
-          },
-        };
-      },
-      transformResponse: (response) => {
-        const user = jwt(response.access_token);
-        const id = user.sub.replace('Patient/', '');
-        return { ...response, user: { ...user, id } };
-      },
-    }),
-    getEoB: builder.query({
-      query: (patient) => ({
-        url: `/fhir/ExplanationOfBenefit`,
-        params: { patient },
-      }),
-    }),
-  }),
 });
 
-const handleHeaders = (headers, state) => {
-  const result = flexpaApi.endpoints.getAccessToken.select()(state);
-  console.log('handleHeaders', result);
-  if (!result.isUninitialized) {
-    const { data } = result;
-    if (data.access_token) {
-      headers.set('authorization', `Bearer ${data.access_token}`);
-    }
-  }
-};
-
-export const { getAccessToken } = flexpaApi.endpoints;
-export const { useGetAccessTokenQuery, useGetEoBQuery } = flexpaApi;
-
-export default flexpaApi;
+export const { setAuth, setEob } = flexpaSlice.actions;
+export default flexpaSlice.reducer;
